@@ -48,7 +48,9 @@ router.all('/conectar', async (req, res) => {
 
 
 router.post('/envio', async (req, res) => {
-    validation(req, res, wbmSession);
+    if (validation(req, res, wbmSession)) {
+        return;
+    }
 
     transaction = true;
     let mensagem = req.body.msg;
@@ -65,7 +67,6 @@ router.post('/envio', async (req, res) => {
                 return ;
             })
             .catch(() => {
-                res.send({"error": "erro ao enviar as mensagens"});
                 return ;
             })
     })
@@ -105,7 +106,7 @@ function inicializar(res, wbmSession) {
 function validation(req, res, wbmSession) {
     if (transaction == true) {
         res.send({"error": "existe uma transacao em aberto"});
-        return;
+        return true;
     }
 
     if (
@@ -113,11 +114,13 @@ function validation(req, res, wbmSession) {
         || !req.body.lista
     ) {
         res.send({"error": "preencha os campos"});
-        return;
+        return true;
     }
 
     if (wbmSession == undefined) {
         res.send({"error": "whatsapp nao esta conectado"});
-        return;
+        return true;
     }
+
+    return false;
 }
