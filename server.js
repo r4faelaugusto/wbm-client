@@ -30,7 +30,7 @@ router.all('/desconectar', async (req, res) => {
 })
 router.all('/conectar', async (req, res) => {
     if (wbmSession !== undefined) {
-        inicializar(wbmSession)
+        inicializar(res, wbmSession)
         return;
     }
 
@@ -39,7 +39,7 @@ router.all('/conectar', async (req, res) => {
         
         wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
         
-        inicializar(wbmSession)
+        inicializar(res, wbmSession)
         return;
     }
 
@@ -79,12 +79,15 @@ router.post('/envio', async (req, res) => {
 
 
 app.use('/whatsapp/', router);
-app.listen(process.env.PORT || 9999, () => {
-    console.info('server ok ', process.env.PORT || 9999);
-});
 
 
-function inicializar(wbmSession) {
+
+
+
+app.listen(process.env.PORT || 9999, '0.0.0.0');
+
+
+function inicializar(res, wbmSession) {
     wbmSession
         .then(async () => {
             await wbm.waitQRCode();
