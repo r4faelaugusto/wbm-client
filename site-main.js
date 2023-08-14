@@ -1,44 +1,53 @@
 $(document).ready(function() {
     $('#apagar').click(function(e) {
         e.preventDefault();
+
         $('#inputMensagem').val('');
         $('#inputLista').val('');
         $('#apagar').hide();
     });
+        
+    $('#desconectar').click(function(e) {
+        e.preventDefault();
+
+        $.get('/whatsapp/desconectar')
+            .then(() => {
+                $('#conectar').show();
+                $('#desconectar').hide();
+                $('#submit').hide();
+                $('#inputMensagem').attr('disabled', true)
+                $('#inputLista').attr('disabled', true)
+                $('#conectar').attr('disabled', false);
+            })
+            .catch((err) => {
+                alert('erro ao desconectar');
+                console.error(err);
+                return;
+            });
+    })
+
     $('#conectar').click(function(e) {
         e.preventDefault();
         $('#conectar').attr('disabled', true);
 
         $.get('/whatsapp/conectar')
-        .then(() => {
-            $('#conectado').val(1);
-            $('#desconectar').show();
-            $('#submit').show();
-            $('#conectar').hide();
-            $('#conectar').attr('disabled', false);
-            $('#inputMensagem').attr('disabled', false);
-            $('#inputLista').attr('disabled', false);
-        })
-        .catch((err) => {
-            console.error(err);
-            return;
-        });  
-    })
-    $('#desconectar').click(function(e) {
-        e.preventDefault();
-        $.get('/whatsapp/desconectar')
-        .then(() => {
-            $('#conectado').val(undefined);
-            $('#desconectar').hide();
-            $('#submit').hide();
-            $('#conectar').show();
-            $('#inputMensagem').attr('disabled', true)
-            $('#inputLista').attr('disabled', true)
-        })
-        .catch((err) => {
-            console.error(err);
-            return;
-        });
+            .then((resposta) => {
+                
+                if (resposta.error) {
+                    $('#conectar').attr('disabled', false);
+                    alert(resposta.error);
+
+                    return;
+                }
+
+                $('#desconectar').show();
+                $('#submit').show();
+                $('#conectar').hide();
+                $('#conectar').attr('disabled', false);
+                $('#inputMensagem').attr('disabled', false);
+                $('#inputLista').attr('disabled', false);
+                console.info("Conectado");
+            });
     })
     $('#submit').click(async function(e) {
         e.preventDefault();
@@ -52,21 +61,19 @@ $(document).ready(function() {
         };
 
         $.post('/whatsapp/envio', params, envioMensagemResponse)
-        .then((data) => {
-            if (data.error) {
-                alert(data.error);
-            }
-
-            $('#apagar').show();
-            console.info(data);
-        })
-        .catch((err) => {
-            console.error(err);
-            alert('erro ao conectar');
-        });
+            .catch((err) => {
+                console.error(err);
+                alert('erro ao conectar');
+            });
 
     })
 
     function envioMensagemResponse(resp) {
+        if (resp.error) {
+            alert(resp.error);
+            return;
+        }
+
+        $('#apagar').show();
     }
 })

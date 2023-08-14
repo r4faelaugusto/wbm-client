@@ -21,16 +21,14 @@ router.get('/site-main.js', (req, res) => {
     res.sendFile(path.join(__dirname + '/site-main.js'));
 })
 
-router.all('/desconectar', (req, res) => {
-    console.info('desconectar', wbmSession);
+router.all('/desconectar', async (req, res) => {
     if (this.wbmSession != undefined) {
-        this.wbmSession = undefined;
-        wbm.start(false, false, false);
+        await wbm.start(false, false, false).then(() => this.wbmSession = undefined);
     }
+
     res.send('ok');
 })
 router.all('/conectar', async (req, res) => {
-    console.info('conectar', wbmSession);
     if (this.wbmSession !== undefined) {
         res.send({"error": "ja esta conectad0"});
         return;
@@ -42,10 +40,13 @@ router.all('/conectar', async (req, res) => {
 
     this.transaction = true;
 
-    this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true})
+    this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
+
+    this.wbmSession
         .then(async () => {
             await wbm.waitQRCode();
             res.send('Conectado!');
+            console.info('pareado!');
             this.transaction = false;
         })
         .catch((err) => {
@@ -57,7 +58,42 @@ router.all('/conectar', async (req, res) => {
 
 
 router.post('/envio', async (req, res) => {
-    console.info('envio', this.wbmSession);
+    validation(req, res, this.wbmSession);
+
+    this.transaction = true;
+    let mensagem = req.body.msg;
+    let lista = req.body.lista.split('\n');
+
+    this.wbmSession.then(async () => {
+        const message = 'Testando: ' + mensagem;
+        const phones = lista;
+
+        wbm.send(phones, message)
+            .then(() => {
+                this.transaction = false;
+                res.send('Enviado!');
+                return ;
+            })
+            .catch(() => {
+                res.send({"error": "erro ao enviar as mensagens"});
+                return ;
+            })
+    })
+    .catch((err) => {
+        this.transaction = false;
+        console.error(err);
+        res.send({"erro": "interno", "err": err});
+        return ;
+    });
+})
+
+
+app.use('/whatsapp/', router);
+app.listen(process.env.PORT || 9999, () => {
+    console.info('server ok ', process.env.PORT || 9999);
+});
+
+function validation(req, res, wbmSession) {
     if (this.transaction == true) {
         res.send({"error": "existe uma transacao em aberto"});
         return;
@@ -71,44 +107,8 @@ router.post('/envio', async (req, res) => {
         return;
     }
 
-    if (this.wbmSession == undefined) {
+    if (wbmSession == undefined) {
         res.send({"error": "whatsapp nao esta conectado"});
         return;
     }
-
-    let mensagem = req.body.msg;
-    let lista = req.body.lista.split('\n');
-
-    this.wbmSession.then(async () => {
-        this.transaction = true;
-        const message = 'Testando: ' + mensagem;
-        const phones = lista;
-
-        console.info(message, phones);
-
-        wbm.send(phones, message)
-        .then(() => {
-            this.transaction = false;
-        });
-        res.send('ENVIADO');
-    }).catch((err) => {
-        this.transaction = false;
-        wbm.end();
-        console.error(err);
-        res.send({"erro": "interno", "err": err});
-    });
-})
-
-
-app.use('/whatsapp/', router);
-app.listen(process.env.PORT || 9999, () => {
-    console.info('server ok ', process.env.PORT || 9999);
-});
-
-
-// whatsAppStarted.then(async () => {
-//     const phones = ['558388072441'];
-//     const message = 'Testando: ' + text;
-//     await wbm.send(phones, message);
-//     await wbm.end();
-// }).catch(err => console.log(err));
+}
