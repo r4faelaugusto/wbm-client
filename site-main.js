@@ -66,14 +66,15 @@ $(document).ready(function() {
             .catch((err) => {
                 console.error(err);
                 alert('erro ao conectar');
-            })
-            .finally(() => {
                 $('#inputMensagem').attr('disabled', false);
                 $('#inputLista').attr('disabled', false);
             })
     })
 
     function envioMensagemResponse(resp) {
+        $('#inputMensagem').attr('disabled', false);
+        $('#inputLista').attr('disabled', false);
+
         if (resp.error) {
             alert(resp.error);
             return;
