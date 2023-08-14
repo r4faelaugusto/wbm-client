@@ -15,7 +15,7 @@
     "express": "^4.18.2",
     "path": "^0.12.7",
     "qrcode": "^1.5.3",
-    "wbm": "^1.1.16"
+    "wbm": "file:wbm-core"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
