@@ -22,22 +22,24 @@ router.get('/site-main.js', (req, res) => {
 })
 
 router.all('/desconectar', async (req, res) => {
-    if (this.wbmSession != undefined) {
-        await wbm.start(false, false, false).then(() => this.wbmSession = undefined);
+    if (wbmSession != undefined) {
+        await wbm.start(false, false, false).then(() => wbmSession = undefined);
     }
 
     res.send('ok');
 })
 router.all('/conectar', async (req, res) => {
-    if (this.wbmSession !== undefined) {
-        inicializar(this.wbmSession)
+    if (wbmSession !== undefined) {
+        inicializar(wbmSession)
         return;
     }
 
-    if (this.transaction == false) {
-        this.transaction = true;
-        this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
-        inicializar(this.wbmSession)
+    if (transaction == false) {
+        transaction = true;
+        
+        wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
+        
+        inicializar(wbmSession)
         return;
     }
 
@@ -46,19 +48,19 @@ router.all('/conectar', async (req, res) => {
 
 
 router.post('/envio', async (req, res) => {
-    validation(req, res, this.wbmSession);
+    validation(req, res, wbmSession);
 
-    this.transaction = true;
+    transaction = true;
     let mensagem = req.body.msg;
     let lista = req.body.lista.split('\n');
 
-    this.wbmSession.then(async () => {
+    wbmSession.then(async () => {
         const message = 'Testando: ' + mensagem;
         const phones = lista;
 
         wbm.send(phones, message)
             .then(() => {
-                this.transaction = false;
+                transaction = false;
                 res.send('Enviado!');
                 return ;
             })
@@ -68,7 +70,7 @@ router.post('/envio', async (req, res) => {
             })
     })
     .catch((err) => {
-        this.transaction = false;
+        transaction = false;
         console.error(err);
         res.send({"erro": "interno", "err": err});
         return ;
@@ -88,17 +90,17 @@ function inicializar(wbmSession) {
             await wbm.waitQRCode();
             res.send('Conectado!');
             console.info('pareado!');
-            this.transaction = false;
+            transaction = false;
         })
         .catch((err) => {
             console.info(err);
-            this.transaction = false;
+            transaction = false;
             res.send({msg: 'qr code nao reconhecido', err: err});
         })
 }
 
 function validation(req, res, wbmSession) {
-    if (this.transaction == true) {
+    if (transaction == true) {
         res.send({"error": "existe uma transacao em aberto"});
         return;
     }
