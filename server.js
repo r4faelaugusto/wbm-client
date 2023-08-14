@@ -30,30 +30,17 @@ router.all('/desconectar', async (req, res) => {
 })
 router.all('/conectar', async (req, res) => {
     if (this.wbmSession !== undefined) {
-        res.send({"error": "ja esta conectad0"});
+        inicializar(this.wbmSession)
         return;
     }
 
-    if (this.transaction == true) {
-        res.send({"error": "existe uma transacao em aberto"});
+    if (this.transaction == false) {
+        this.transaction = true;
+        this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
+        inicializar(this.wbmSession)
     }
 
-    this.transaction = true;
-
-    this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
-
-    this.wbmSession
-        .then(async () => {
-            await wbm.waitQRCode();
-            res.send('Conectado!');
-            console.info('pareado!');
-            this.transaction = false;
-        })
-        .catch((err) => {
-            console.info(err);
-            this.transaction = false;
-            res.send({msg: 'qr code nao reconhecido', err: err});
-        })
+    res.send({"error": "existe uma transacao em aberto"});
 })
 
 
@@ -92,6 +79,22 @@ app.use('/whatsapp/', router);
 app.listen(process.env.PORT || 9999, () => {
     console.info('server ok ', process.env.PORT || 9999);
 });
+
+
+function inicializar(wbmSession) {
+    wbmSession
+        .then(async () => {
+            await wbm.waitQRCode();
+            res.send('Conectado!');
+            console.info('pareado!');
+            this.transaction = false;
+        })
+        .catch((err) => {
+            console.info(err);
+            this.transaction = false;
+            res.send({msg: 'qr code nao reconhecido', err: err});
+        })
+}
 
 function validation(req, res, wbmSession) {
     if (this.transaction == true) {
