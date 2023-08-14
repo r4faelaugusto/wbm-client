@@ -45,6 +45,8 @@ $(document).ready(function() {
 
         let mensagem = $('#inputMensagem').val();
         let lista = $('#inputLista').val();
+        $('#inputMensagem').attr('disabled', true)
+        $('#inputLista').attr('disabled', true)
 
         const params = {
             msg: mensagem,
@@ -59,10 +61,14 @@ $(document).ready(function() {
 
             $('#apagar').show();
             console.info(data);
+            $('#inputMensagem').attr('disabled', false)
+            $('#inputLista').attr('disabled', false)
         })
         .catch((err) => {
             console.error(err);
             alert('erro ao conectar');
+            $('#inputMensagem').attr('disabled', false)
+            $('#inputLista').attr('disabled', false)
         });
 
     })
