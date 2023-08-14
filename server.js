@@ -4,11 +4,13 @@ const QRCode = require('qrcode');
 const path = require('path');
 const app = express();
 const router = express.Router();
+const dotenv = require("dotenv");
+
+let wbmSession = undefined;
+dotenv.config();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-let wbmSession = undefined;
 
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
@@ -29,18 +31,20 @@ router.all('/desconectar', (req, res) => {
     }
     res.send('ok');
 })
-router.all('/conectar', (req, res) => {
+router.all('/conectar', async (req, res) => {
     if (this.wbmSession !== undefined) {
         res.send('OK.');
         return;
     }
 
-    this.wbmSession = wbm.start({showBrowser: true, qrCodeData: false, session: true})
-        .then(() => {
-            res.send('OK');
+    this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true})
+        .then(async () => {
+            await wbm.waitQRCode();
+            res.send('Conectado!');
         })
         .catch((err) => {
-            throw err;
+            console.info(err);
+            res.send({msg: 'qr code nao reconhecido', err: err});
         })
 })
 
@@ -78,7 +82,9 @@ router.post('/envio', async (req, res) => {
 
 
 app.use('/whatsapp/', router);
-app.listen('9999');
+app.listen(process.env.PORT || 9999, () => {
+    console.info('server ok ', process.env.PORT || 9999);
+});
 
 
 // whatsAppStarted.then(async () => {
