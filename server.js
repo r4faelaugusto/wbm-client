@@ -8,7 +8,7 @@ const router = express.Router();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-let wbmSession = null;
+let wbmSession = undefined;
 
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
@@ -19,13 +19,13 @@ router.get('/site-main.js', (req, res) => {
 })
 
 router.all('/desconectar', (req, res) => {
-    console.info(this.wbmSession);
-
     if (this.wbmSession != undefined) {
-        this.wbmSession.then(() => {
-            wbm.end();
-            this.wbmSession = undefined;
-        })
+        this.wbmSession = undefined;
+        wbm.start(false, false, false);
+        // this.wbmSession.then(() => {
+        //     wbm.end();
+        //     this.wbmSession = undefined;
+        // })
     }
     res.send('ok');
 })
@@ -34,20 +34,18 @@ router.all('/conectar', (req, res) => {
         res.send('OK.');
         return;
     }
-    console.info(this.wbmSession);
 
     this.wbmSession = wbm.start({showBrowser: true, qrCodeData: false, session: true})
         .then(() => {
             res.send('OK');
         })
         .catch((err) => {
-            res.send(err);
+            throw err;
         })
 })
 
 
-router.post('/envio', (req, res) => {
-    console.info(this.wbmSession);
+router.post('/envio', async (req, res) => {
     if (
         !req.body.msg
         || !req.body.lista
@@ -57,7 +55,7 @@ router.post('/envio', (req, res) => {
     }
 
     if (this.wbmSession == undefined) {
-        res.send('error, session nao iniciada');
+        throw 'error, session nao iniciada';
     }
 
     let mensagem = req.body.msg;
@@ -69,10 +67,12 @@ router.post('/envio', (req, res) => {
 
         console.info(message, phones);
 
-        await wbm.send(phones, message);
+        wbm.send(phones, message);
+        res.send('ENVIADO');
     }).catch((err) => {
+        wbm.end();
         console.error(err);
-        res.send(err);
+        res.send({"erro": "interno", "err": err});
     });
 })
 

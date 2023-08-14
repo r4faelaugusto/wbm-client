@@ -1,10 +1,36 @@
 $(document).ready(function() {
+    $('#apagar').click(function(e) {
+        $('#inputMensagem').val('');
+        $('#inputLista').val('');
+    });
+
+    $('#conectar').click(function(e) {
+        e.preventDefault();
+        $.get('/whatsapp/conectar')
+        .then(() => {
+            $('#conectado').val(1);
+            $('#desconectar').show();
+            $('#submit').show();
+            $('#conectar').hide();
+            $('#inputMensagem').attr('disabled', false);
+            $('#inputLista').attr('disabled', false);
+        })
+        .catch((err) => {
+            console.error(err);
+            return;
+        });  
+    })
+
     $('#desconectar').click(function(e) {
         e.preventDefault();
         $.get('/whatsapp/desconectar')
         .then(() => {
-            $('#conectado').value = undefined;
+            $('#conectado').val(undefined);
             $('#desconectar').hide();
+            $('#submit').hide();
+            $('#conectar').show();
+            $('#inputMensagem').attr('disabled', true)
+            $('#inputLista').attr('disabled', true)
         })
         .catch((err) => {
             console.error(err);
@@ -14,15 +40,6 @@ $(document).ready(function() {
     $('#submit').click(async function(e) {
         e.preventDefault();
 
-        if (!$('#conectado').val()) {
-            await $.get('/whatsapp/conectar').catch((err) => {
-                console.error(err);
-                return;
-            });
-            $('#conectado').value = 1;
-            $('#desconectar').show();
-        }
-
         let mensagem = $('#inputMensagem').val();
         let lista = $('#inputLista').val();
 
@@ -31,22 +48,18 @@ $(document).ready(function() {
             lista: lista
         };
 
-        $.post('/whatsapp/envio', params, envioMensagemResponse).catch((err) => {
+        $.post('/whatsapp/envio', params, envioMensagemResponse)
+        .then((data) => {
+            console.info('ok', data)
+            alert('Enviado');
+        })
+        .catch((err) => {
             console.error(err);
-
+            alert('erro');
         });
 
     })
 
     function envioMensagemResponse(resp) {
-        if (resp.error) {
-            alert(resp.error);
-            return;
-        }
-        console.info(resp);
-        $('#inputMensagem').value = '';
-        $('#inputLista').value = '';
-
-        alert('ok');
     }
 })
