@@ -38,6 +38,7 @@ router.all('/conectar', async (req, res) => {
         this.transaction = true;
         this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true});
         inicializar(this.wbmSession)
+        return;
     }
 
     res.send({"error": "existe uma transacao em aberto"});
