@@ -7,6 +7,7 @@ const router = express.Router();
 const dotenv = require("dotenv");
 
 let wbmSession = undefined;
+let transaction = false;
 dotenv.config();
 
 app.use(express.json());
@@ -21,35 +22,47 @@ router.get('/site-main.js', (req, res) => {
 })
 
 router.all('/desconectar', (req, res) => {
+    console.info('desconectar', wbmSession);
     if (this.wbmSession != undefined) {
         this.wbmSession = undefined;
         wbm.start(false, false, false);
-        // this.wbmSession.then(() => {
-        //     wbm.end();
-        //     this.wbmSession = undefined;
-        // })
     }
     res.send('ok');
 })
 router.all('/conectar', async (req, res) => {
+    console.info('conectar', wbmSession);
     if (this.wbmSession !== undefined) {
-        res.send('OK.');
+        res.send({"error": "ja esta conectad0"});
         return;
     }
+
+    if (this.transaction == true) {
+        res.send({"error": "existe uma transacao em aberto"});
+    }
+
+    this.transaction = true;
 
     this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true})
         .then(async () => {
             await wbm.waitQRCode();
             res.send('Conectado!');
+            this.transaction = false;
         })
         .catch((err) => {
             console.info(err);
+            this.transaction = false;
             res.send({msg: 'qr code nao reconhecido', err: err});
         })
 })
 
 
 router.post('/envio', async (req, res) => {
+    console.info('envio', this.wbmSession);
+    if (this.transaction == true) {
+        res.send({"error": "existe uma transacao em aberto"});
+        return;
+    }
+
     if (
         !req.body.msg
         || !req.body.lista
@@ -59,21 +72,27 @@ router.post('/envio', async (req, res) => {
     }
 
     if (this.wbmSession == undefined) {
-        throw 'error, session nao iniciada';
+        res.send({"error": "whatsapp nao esta conectado"});
+        return;
     }
 
     let mensagem = req.body.msg;
     let lista = req.body.lista.split('\n');
 
     this.wbmSession.then(async () => {
+        this.transaction = true;
         const message = 'Testando: ' + mensagem;
         const phones = lista;
 
         console.info(message, phones);
 
-        wbm.send(phones, message);
+        wbm.send(phones, message)
+        .then(() => {
+            this.transaction = false;
+        });
         res.send('ENVIADO');
     }).catch((err) => {
+        this.transaction = false;
         wbm.end();
         console.error(err);
         res.send({"erro": "interno", "err": err});

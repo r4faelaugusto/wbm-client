@@ -1,17 +1,21 @@
 $(document).ready(function() {
     $('#apagar').click(function(e) {
+        e.preventDefault();
         $('#inputMensagem').val('');
         $('#inputLista').val('');
+        $('#apagar').hide();
     });
-
     $('#conectar').click(function(e) {
         e.preventDefault();
+        $('#conectar').attr('disabled', true);
+
         $.get('/whatsapp/conectar')
         .then(() => {
             $('#conectado').val(1);
             $('#desconectar').show();
             $('#submit').show();
             $('#conectar').hide();
+            $('#conectar').attr('disabled', false);
             $('#inputMensagem').attr('disabled', false);
             $('#inputLista').attr('disabled', false);
         })
@@ -20,7 +24,6 @@ $(document).ready(function() {
             return;
         });  
     })
-
     $('#desconectar').click(function(e) {
         e.preventDefault();
         $.get('/whatsapp/desconectar')
@@ -50,12 +53,16 @@ $(document).ready(function() {
 
         $.post('/whatsapp/envio', params, envioMensagemResponse)
         .then((data) => {
-            console.info('ok', data)
-            alert('Enviado');
+            if (data.error) {
+                alert(data.error);
+            }
+
+            $('#apagar').show();
+            console.info(data);
         })
         .catch((err) => {
             console.error(err);
-            alert('erro');
+            alert('erro ao conectar');
         });
 
     })
