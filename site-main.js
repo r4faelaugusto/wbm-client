@@ -5,6 +5,39 @@ $(document).ready(function() {
         $('#inputLista').val('');
         $('#apagar').hide();
     });
+
+    $('#enviar').click(function(e) {
+        e.preventDefault();
+
+        $('#inputMensagem').attr('disabled', true)
+        $('#inputLista').attr('disabled', true)
+        $('#enviar').attr('disabled', true)
+
+        const params = {
+            msg: $('#inputMensagem').val(),
+            lista: $('#inputLista').val()
+        };
+
+        $.post('/whatsapp/enviar', params, envioMensagemResponse)
+            .then((data) => {
+                $('#inputMensagem').attr('disabled', false)
+                $('#inputLista').attr('disabled', false)
+                $('#enviar').attr('disabled', false)
+                
+                if (data.error) {
+                    alert(data.error);
+                }
+                $('#apagar').show();
+            })
+            .catch((err) => {
+                console.error(err);
+                alert('erro ao conectar');
+                $('#inputMensagem').attr('disabled', false)
+                $('#inputLista').attr('disabled', false)
+                $('#enviar').attr('disabled', false)
+            });
+    });
+
     $('#conectar').click(function(e) {
         e.preventDefault();
         $('#conectar').attr('disabled', true);

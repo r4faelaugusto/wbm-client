@@ -12,6 +12,7 @@ dotenv.config();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/whatsapp/', router);
 
 router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
@@ -21,43 +22,45 @@ router.get('/site-main.js', (req, res) => {
     res.sendFile(path.join(__dirname + '/site-main.js'));
 })
 
-router.all('/desconectar', (req, res) => {
-    console.info('desconectar', wbmSession);
-    if (this.wbmSession != undefined) {
-        this.wbmSession = undefined;
-        wbm.start(false, false, false);
-    }
-    res.send('ok');
-})
-router.all('/conectar', async (req, res) => {
-    console.info('conectar', wbmSession);
-    if (this.wbmSession !== undefined) {
-        res.send({"error": "ja esta conectad0"});
-        return;
-    }
-
-    if (this.transaction == true) {
-        res.send({"error": "existe uma transacao em aberto"});
-    }
-
+router.post('/enviar', async (req, res) => {
+    validation(req, res);
     this.transaction = true;
 
-    this.wbmSession = wbm.start({showBrowser: false, qrCodeData: false, session: true})
-        .then(async () => {
-            await wbm.waitQRCode();
-            res.send('Conectado!');
-            this.transaction = false;
-        })
-        .catch((err) => {
-            console.info(err);
-            this.transaction = false;
-            res.send({msg: 'qr code nao reconhecido', err: err});
-        })
+    let mensagem = req.body.msg;
+    let lista = req.body.lista.split('\n');
+
+    wbm.start({showBrowser: false, qrCodeData: false, session: true})
+    .then(async () => {
+        await wbm.waitQRCode();
+
+        const message = 'Testando: ' + mensagem;
+        const phones = lista;
+
+        console.info(message, phones);
+
+        wbm.send(phones, message)
+            .then(() => {
+                this.transaction = false;
+                res.send('ENVIADO');
+                return;
+            })
+            .catch(() => {
+                res.send({"error": "Erro ao enviar", "err": err});
+            })
+    })
+    .catch((err) => {
+        console.info(err);
+        this.transaction = false;
+        res.send({"error": "erro ao conectar no whatsapp"});
+        return;
+    })
 })
 
+app.listen(process.env.PORT || 9999, () => {
+    console.info('server ok ', process.env.PORT || 9999);
+});
 
-router.post('/envio', async (req, res) => {
-    console.info('envio', this.wbmSession);
+function validation(req, res) {
     if (this.transaction == true) {
         res.send({"error": "existe uma transacao em aberto"});
         return;
@@ -70,45 +73,4 @@ router.post('/envio', async (req, res) => {
         res.send({"error": "preencha os campos"});
         return;
     }
-
-    if (this.wbmSession == undefined) {
-        res.send({"error": "whatsapp nao esta conectado"});
-        return;
-    }
-
-    let mensagem = req.body.msg;
-    let lista = req.body.lista.split('\n');
-
-    this.wbmSession.then(async () => {
-        this.transaction = true;
-        const message = 'Testando: ' + mensagem;
-        const phones = lista;
-
-        console.info(message, phones);
-
-        wbm.send(phones, message)
-        .then(() => {
-            this.transaction = false;
-        });
-        res.send('ENVIADO');
-    }).catch((err) => {
-        this.transaction = false;
-        wbm.end();
-        console.error(err);
-        res.send({"erro": "interno", "err": err});
-    });
-})
-
-
-app.use('/whatsapp/', router);
-app.listen(process.env.PORT || 9999, () => {
-    console.info('server ok ', process.env.PORT || 9999);
-});
-
-
-// whatsAppStarted.then(async () => {
-//     const phones = ['558388072441'];
-//     const message = 'Testando: ' + text;
-//     await wbm.send(phones, message);
-//     await wbm.end();
-// }).catch(err => console.log(err));
+}
